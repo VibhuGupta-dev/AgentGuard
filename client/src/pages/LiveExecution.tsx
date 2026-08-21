@@ -148,8 +148,8 @@ export default function LiveExecution() {
                   ${sc.category === 'happy_path' ? 'bg-emerald-950/40 text-emerald-400' :
                     sc.category === 'edge_case' ? 'bg-slate-800 text-slate-400' :
                     sc.category === 'adversarial' ? 'bg-red-950/40 text-red-400' :
-                    'bg-violet-950/40 text-violet-400'}`}>
-                  {sc.category.replace('_', ' ')}
+                    'bg-amber-950/40 text-amber-500'}`}>
+                  {(sc.category || '').replace(/_/g, ' ')}
                 </span>
               </button>
             );
@@ -190,7 +190,7 @@ export default function LiveExecution() {
                         step.type === 'agent_reasoning' ? 'bg-violet-950/10 border-violet-500/10 text-violet-300' :
                         step.type === 'user_message' ? 'bg-blue-950/10 border-blue-500/10 text-blue-300' :
                         'bg-slate-900/50 border-card-border text-slate-300'
-                      }`}
+                      } ${step.isSimulated ? '!text-white' : '!text-blue-400'}`}
                     >
                       {step.type === 'tool_call' && step.toolInput
                         ? JSON.stringify(step.toolInput, null, 2)
@@ -221,7 +221,7 @@ export default function LiveExecution() {
                   <div>
                     <span className="uppercase font-extrabold">{activeTrace.outcome}</span>
                     {activeTrace.failureMode && activeTrace.failureMode !== 'none' && (
-                      <span className="ml-2 font-mono text-[10px] opacity-70">· {activeTrace.failureMode.replace(/_/g, ' ')}</span>
+                      <span className="ml-2 font-mono text-[10px] opacity-70">· {(activeTrace.failureMode || '').replace(/_/g, ' ')}</span>
                     )}
                     {activeTrace.failureEvidence && (
                       <p className="font-normal text-[10px] mt-1 opacity-80">{activeTrace.failureEvidence}</p>

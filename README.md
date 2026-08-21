@@ -62,7 +62,7 @@ AgentCI is a continuous integration and evaluation harness for AI agents. You gi
 | mongoose | 8.3 | MongoDB ODM |
 | bullmq | 6.1 | Distributed job queue for scenario and run jobs |
 | ioredis | 6.0 | Redis client (BullMQ transport) |
-| @anthropic-ai/sdk | 0.20 | Real Claude API calls (optional - falls back if no key) |
+| @google/genai | ^0.1.2 | Real Gemini API calls (optional - falls back if no key) |
 | jsonwebtoken | 9.0 | Auth tokens (stored as httpOnly cookies) |
 | bcryptjs | 2.4 | Password hashing |
 | dotenv | 16.4 | Environment variable loading |
@@ -213,12 +213,12 @@ AgentCI works fully without an Anthropic API key. Everything degrades gracefully
 
 | Feature | With API Key | Without API Key |
 |---|---|---|
-| Scenario generation | Claude generates 12 unique scenarios from actual prompt + tools | Pre-written library of 12 scenarios per taskDomain |
-| Sandbox execution | Real multi-turn Claude tool-use loop with LLM-as-judge | Rule-based simulation based on scenario category |
-| Tool result generation | Claude generates realistic contextual mock JSON | Hardcoded plausible result structures |
+| Scenario generation | Gemini generates 12 unique scenarios from actual prompt + tools | Pre-written library of 12 scenarios per taskDomain |
+| Sandbox execution | Real multi-turn Gemini tool-use loop with LLM-as-judge | Rule-based simulation based on scenario category |
+| Tool result generation | Gemini generates realistic contextual mock JSON | Hardcoded plausible result structures |
 | Failure classification | LLM judge with chain-of-thought evidence citing specific steps | Deterministic rules (e.g. destructive_pressure always -> unsafe_destructive_action) |
 
-To enable real AI mode: set ANTHROPIC_API_KEY=sk-ant-... in server/.env and restart the backend. No other changes needed.
+To enable real AI mode: set GEMINI_API_KEY=your_key... in server/.env and restart the backend. No other changes needed.
 
 NOTE: The seed data was created without a real API key, so the pre-seeded run uses simulated traces. Running a new evaluation with a real API key activates all LLM-powered paths automatically.
 
@@ -423,7 +423,7 @@ Create server/.env by copying server/.env.example:
     MONGO_URI=mongodb://localhost:27017/agentci
     JWT_SECRET=super_secret_agentci_jwt_key_12345
     CLIENT_URL=http://localhost:5173
-    ANTHROPIC_API_KEY=
+    GEMINI_API_KEY=
     NODE_ENV=development
 
 | Variable | Required | Default | Description |
@@ -432,7 +432,7 @@ Create server/.env by copying server/.env.example:
 | MONGO_URI | Yes | - | MongoDB connection string |
 | JWT_SECRET | Yes | - | Secret key for signing JWT tokens |
 | CLIENT_URL | No | http://localhost:5173 | Allowed CORS origin for the frontend |
-| ANTHROPIC_API_KEY | No | (blank) | Blank or starting with your_ = simulated/demo mode |
+| GEMINI_API_KEY | No | (blank) | Blank or starting with your_ = simulated/demo mode |
 | NODE_ENV | No | development | Affects error stack exposure in API error responses |
 
 ---

@@ -79,7 +79,7 @@ export default function Sidebar() {
         <button 
           onClick={() => {
             setActiveTabId('dashboard');
-            navigate('/');
+            navigate('/dashboard');
           }}
           className="flex items-center space-x-2.5 text-white hover:opacity-85 transition"
         >

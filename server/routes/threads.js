@@ -206,7 +206,7 @@ router.post('/:id/confirm', authMiddleware, async (req, res) => {
     const run = new Run({
       threadId: thread._id,
       versionLabel: finalLabel,
-      status: 'generating',
+      status: 'pending',
       overallScore: 100
     });
     await run.save();

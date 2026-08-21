@@ -36,6 +36,10 @@ router.post('/:id/generate-scenarios', authMiddleware, async (req, res) => {
     const run = await Run.findById(req.params.id);
     if (!run) return res.status(404).json({ error: 'Run not found' });
 
+    if (run.status === 'generating' || run.status === 'completed') {
+      return res.json({ success: true, message: 'Scenario generation already in progress or completed', run });
+    }
+
     run.status = 'generating';
     await run.save();
 

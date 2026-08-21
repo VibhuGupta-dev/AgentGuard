@@ -12,6 +12,7 @@ const FailureTaxonomyCountsSchema = new mongoose.Schema({
   unsafeDestructiveAction: { type: Number, default: 0 },
   goalDrift: { type: Number, default: 0 },
   hallucinatedConfidence: { type: Number, default: 0 },
+  incomplete_task: { type: Number, default: 0 },
   other: { type: Number, default: 0 }
 }, { _id: false });
 
@@ -33,8 +34,8 @@ const RunSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['generating', 'running', 'completed', 'failed'],
-    default: 'generating',
+    enum: ['pending', 'generating', 'running', 'completed', 'failed'],
+    default: 'pending',
     index: true
   },
   overallScore: {

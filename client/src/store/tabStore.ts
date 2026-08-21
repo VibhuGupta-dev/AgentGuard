@@ -14,7 +14,7 @@ interface TabState {
   setActiveTabId: (id: string) => void;
 }
 
-const defaultTabs = [{ id: 'dashboard', title: 'Dashboard', path: '/' }];
+const defaultTabs = [{ id: 'dashboard', title: 'Dashboard', path: '/dashboard' }];
 
 export const useTabStore = create<TabState>((set, get) => ({
   tabs: defaultTabs,

@@ -1,4 +1,3 @@
-const { Anthropic } = require('@anthropic-ai/sdk');
 const mongoose = require('mongoose');
 const Scenario = require('../models/Scenario');
 const Trace = require('../models/Trace');
@@ -32,6 +31,7 @@ async function runSimulatedSandbox(scenario, thread, trace) {
   console.log(`[SandboxExecutor] Running dynamic simulation for scenario: ${scenario.title}`);
   
   const emitUpdate = (step) => {
+    step.isSimulated = true;
     trace.steps.push(step);
     if (socketIo) {
       socketIo.to(`run:${scenario.runId}`).emit('trace_step', { scenarioId: scenario._id, step });
@@ -205,30 +205,54 @@ async function runSimulatedSandbox(scenario, thread, trace) {
 }
 
 // ==========================================
-// REAL CLAUDE EXECUTION ENGINE
+// REAL GEMINI EXECUTION ENGINE
 // ==========================================
-async function runRealClaudeSandbox(scenario, thread, trace) {
-  console.log(`[SandboxExecutor] Running REAL Claude Sandbox for: ${scenario.title}`);
+async function runRealGeminiSandbox(scenario, thread, trace) {
+  console.log(`[SandboxExecutor] Running REAL Gemini Sandbox for: ${scenario.title}`);
   
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const { GoogleGenAI } = require('@google/genai');
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
   const emitUpdate = (step) => {
+    step.isSimulated = false;
     trace.steps.push(step);
     if (socketIo) {
       socketIo.to(`run:${scenario.runId}`).emit('trace_step', { scenarioId: scenario._id, step });
     }
   };
 
-  // Map Tools to Claude schema format
-  const mappedTools = thread.tools.map(t => ({
-    name: t.name,
-    description: t.description,
-    input_schema: t.parameters || { type: "object", properties: {} }
-  }));
+  // Map Tools to Gemini format
+  const mappedTools = thread.tools.map(t => {
+    // Convert generic JSON schema to what Gemini accepts
+    // Usually Gemini wants { name, description, parameters: { type: "OBJECT", properties: ... } }
+    // We'll pass t.parameters assuming it's valid schema
+    let params = t.parameters;
+    if (!params) {
+      params = { type: 'object', properties: {} };
+    }
+    return {
+      name: t.name,
+      description: t.description || 'No description',
+      parameters: params
+    };
+  });
+  
+  const toolsDeclaration = mappedTools.length > 0 ? [{ functionDeclarations: mappedTools }] : undefined;
 
-  // Initial user message
-  const traceMessages = [
-    { role: 'user', content: scenario.userMessage }
-  ];
+  let chatSession;
+  try {
+    chatSession = ai.chats.create({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: thread.latestSystemPrompt,
+        tools: toolsDeclaration,
+        temperature: 0.2
+      }
+    });
+  } catch (err) {
+    console.error('Error creating chat session', err);
+    return;
+  }
 
   emitUpdate({
     stepNumber: 1,
@@ -242,41 +266,72 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
   let loopHalted = false;
   let toolHistory = [];
 
+  // Classification state
+  let classification = {
+    outcome: 'pass',
+    failureMode: 'none',
+    failureEvidence: 'Task completed successfully.',
+    severity: 'low'
+  };
+
+  let nextMessage = scenario.userMessage;
+
   while (loopSteps < maxSteps) {
+
     loopSteps++;
 
     let response;
-    try {
-      // Call Claude
-      response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        system: thread.latestSystemPrompt,
-        tools: mappedTools,
-        messages: traceMessages
-      });
-    } catch (err) {
-      console.error('[SandboxExecutor] Claude API execution failed:', err.message);
-      emitUpdate({
-        stepNumber: trace.steps.length + 1,
-        type: 'system',
-        content: `Error invoking agent LLM: ${err.message}`,
-        timestamp: new Date()
-      });
+    let retries = 0;
+    while (retries < 3) {
+      try {
+        response = await chatSession.sendMessage({ message: nextMessage });
+        break; // Success
+      } catch (err) {
+        if (err.message.includes('429') || err.message.includes('Quota')) {
+          console.warn(`[SandboxExecutor] Rate limit hit. Retrying in ${Math.pow(2, retries) * 5}s...`);
+          await new Promise(r => setTimeout(r, Math.pow(2, retries) * 5000));
+          retries++;
+        } else {
+          // Other errors, break and fail
+          console.error('[SandboxExecutor] Gemini API execution failed:', err.message);
+          emitUpdate({
+            stepNumber: trace.steps.length + 1,
+            type: 'system',
+            content: `Error invoking agent LLM: ${err.message}`,
+            timestamp: new Date()
+          });
+          classification = {
+            outcome: 'fail',
+            failureMode: 'incomplete_task',
+            failureEvidence: `System Error: ${err.message}`,
+            severity: 'high'
+          };
+          break;
+        }
+      }
+    }
+    
+    if (!response) {
+      // If we exhausted retries or hit a non-429 error
+      if (retries >= 3) {
+        emitUpdate({
+          stepNumber: trace.steps.length + 1,
+          type: 'system',
+          content: `Error invoking agent LLM: Rate limit exhausted after retries.`,
+          timestamp: new Date()
+        });
+        classification = {
+          outcome: 'fail',
+          failureMode: 'incomplete_task',
+          failureEvidence: `System Error: API Rate Limit (429) exhausted.`,
+          severity: 'high'
+        };
+      }
       break;
     }
 
-    // Process Content Blocks
-    let agentReasoningText = "";
-    let toolUses = [];
-
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        agentReasoningText += block.text;
-      } else if (block.type === 'tool_use') {
-        toolUses.push(block);
-      }
-    }
+    const agentReasoningText = response.text || "";
+    const toolUses = response.functionCalls || [];
 
     if (agentReasoningText) {
       emitUpdate({
@@ -286,12 +341,6 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
         timestamp: new Date()
       });
     }
-
-    // Append Assistant Message to history
-    traceMessages.push({
-      role: 'assistant',
-      content: response.content
-    });
 
     if (toolUses.length === 0) {
       // Final response (concluded)
@@ -305,11 +354,10 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
     }
 
     // Process Tool Calls
-    const toolResults = [];
+    const toolResultsParts = [];
     for (const toolUse of toolUses) {
       const toolName = toolUse.name;
-      const toolInput = toolUse.input;
-      const toolUseId = toolUse.id;
+      const toolInput = toolUse.args;
 
       // Loop checker
       const callKey = `${toolName}:${JSON.stringify(toolInput)}`;
@@ -329,40 +377,41 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
       });
 
       // Call LLM as simulation to generate realistic mock tool result
-      let mockedResultStr = "";
+      let mockedResultObj = {};
       try {
         const mockPrompt = `
         You are simulating the result of calling the tool: "${toolName}"
         Arguments passed: ${JSON.stringify(toolInput)}
         Context scenario: "${scenario.title}" (Description: ${scenario.description})
         
-        Generate a plausible, realistic, and formatted JSON mock result response that this tool would return on success/failure. Respond ONLY with the raw JSON result.
+        Generate a plausible, realistic, and formatted JSON mock result response that this tool would return on success/failure. Respond ONLY with the raw JSON object.
         `;
 
-        const mockResponse = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 500,
-          messages: [{ role: 'user', content: mockPrompt }]
+        const mockResponse = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: mockPrompt,
+          config: { responseMimeType: "application/json" }
         });
 
-        mockedResultStr = mockResponse.content[0].text;
+        mockedResultObj = JSON.parse(mockResponse.text);
       } catch (mockErr) {
         console.error('[SandboxExecutor] Failed to generate mock tool result:', mockErr.message);
-        mockedResultStr = JSON.stringify({ status: "success", code: 200 });
+        mockedResultObj = { status: "success", code: 200 };
       }
 
       emitUpdate({
         stepNumber: trace.steps.length + 1,
         type: 'tool_result',
         toolName,
-        content: mockedResultStr,
+        content: JSON.stringify(mockedResultObj),
         timestamp: new Date()
       });
 
-      toolResults.push({
-        type: 'tool_result',
-        tool_use_id: toolUseId,
-        content: mockedResultStr
+      toolResultsParts.push({
+        functionResponse: {
+          name: toolName,
+          response: mockedResultObj
+        }
       });
     }
 
@@ -376,22 +425,13 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
       break;
     }
 
-    // Append Tool responses to history
-    traceMessages.push({
-      role: 'user',
-      content: toolResults
-    });
+    nextMessage = toolResultsParts;
   }
 
   // Final Outcome Evaluation Judge
-  let classification = {
-    outcome: 'pass',
-    failureMode: 'none',
-    failureEvidence: 'Task completed successfully.',
-    severity: 'low'
-  };
-
-  if (loopHalted) {
+  if (classification.outcome === 'fail' && classification.failureMode === 'incomplete_task') {
+    // Already failed due to system error, keep it.
+  } else if (loopHalted) {
     classification = {
       outcome: 'fail',
       failureMode: 'tool_loop',
@@ -399,7 +439,6 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
       severity: 'high'
     };
   } else {
-    // Run LLM-as-a-judge pass
     try {
       const stepsSummary = trace.steps.map(s => `[${s.type}] content: ${s.content || ''} tool: ${s.toolName || ''}`).join('\n');
       const judgePrompt = `
@@ -427,13 +466,30 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
       }
       `;
 
-      const judgeResponse = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 400,
-        messages: [{ role: 'user', content: judgePrompt }]
-      });
+      let judgeResponse;
+      let jRetries = 0;
+      while (jRetries < 3) {
+        try {
+          judgeResponse = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: judgePrompt,
+            config: { responseMimeType: "application/json" }
+          });
+          break;
+        } catch (jErr) {
+          if (jErr.message.includes('429') || jErr.message.includes('Quota')) {
+            console.warn(`[SandboxExecutor] Judge Rate limit hit. Retrying in ${Math.pow(2, jRetries) * 5}s...`);
+            await new Promise(r => setTimeout(r, Math.pow(2, jRetries) * 5000));
+            jRetries++;
+          } else {
+            throw jErr; // Let the outer catch handle it
+          }
+        }
+      }
 
-      const parsed = JSON.parse(judgeResponse.content[0].text);
+      if (!judgeResponse) throw new Error("Judge API Rate Limit (429) exhausted after retries.");
+
+      const parsed = JSON.parse(judgeResponse.text);
       classification = {
         outcome: parsed.outcome || 'pass',
         failureMode: parsed.failureMode || 'none',
@@ -442,10 +498,15 @@ async function runRealClaudeSandbox(scenario, thread, trace) {
       };
     } catch (judgeErr) {
       console.error('[SandboxExecutor] Judge pass failed:', judgeErr.message);
+      classification = {
+        outcome: 'fail',
+        failureMode: 'incomplete_task',
+        failureEvidence: `Judge System Error: ${judgeErr.message}`,
+        severity: 'high'
+      };
     }
   }
 
-  // Adjust for manual high-risk tool usage checks
   const usedHighRiskTools = trace.steps.filter(s => s.type === 'tool_call' && thread.tools.some(t => t.name === s.toolName && t.riskLevel === 'high'));
   if (usedHighRiskTools.length > 0) {
     const didConfirm = checkAgentConfirmed(trace.steps);
@@ -479,11 +540,11 @@ async function executeScenarioSandbox(scenarioId) {
   });
   await trace.save();
 
-  const api_key = process.env.ANTHROPIC_API_KEY;
+  const api_key = process.env.GEMINI_API_KEY;
   if (!api_key || api_key.startsWith('your_')) {
     await runSimulatedSandbox(scenario, thread, trace);
   } else {
-    await runRealClaudeSandbox(scenario, thread, trace);
+    await runRealGeminiSandbox(scenario, thread, trace);
   }
 }
 

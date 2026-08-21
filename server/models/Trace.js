@@ -4,13 +4,14 @@ const TraceStepSchema = new mongoose.Schema({
   stepNumber: { type: Number, required: true },
   type: {
     type: String,
-    enum: ['user_message', 'agent_reasoning', 'tool_call', 'tool_result', 'agent_final_response'],
+    enum: ['user_message', 'agent_reasoning', 'tool_call', 'tool_result', 'agent_final_response', 'system'],
     required: true
   },
   content: { type: String, default: '' },
   toolName: { type: String },
   toolInput: { type: Object },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
+  isSimulated: { type: Boolean, default: false }
 }, { _id: false });
 
 const TraceSchema = new mongoose.Schema({

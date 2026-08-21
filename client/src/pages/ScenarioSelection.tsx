@@ -34,7 +34,7 @@ export default function ScenarioSelection() {
         
         // 2. Poll for scenario readiness (check status or items)
         let attempts = 0;
-        const maxAttempts = 15;
+        const maxAttempts = 60; // 90 seconds timeout for Gemini API
         
         const poll = setInterval(async () => {
           attempts++;

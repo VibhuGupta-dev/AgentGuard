@@ -26,10 +26,11 @@ const TAXONOMY_LABELS: Record<string, string> = {
   unsafeDestructiveAction: 'Unsafe Action',
   goalDrift: 'Goal Drift',
   hallucinatedConfidence: 'Hallucination',
+  incomplete_task: 'Incomplete / Error',
   other: 'Other',
 };
 
-const TAXONOMY_COLORS = ['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#6b7280'];
+const TAXONOMY_COLORS = ['#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#6b7280'];
 
 export default function Scorecard() {
   const { id, runId } = useParams();

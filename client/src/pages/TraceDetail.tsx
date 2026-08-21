@@ -178,7 +178,7 @@ export default function TraceDetail() {
                   )}
                 </div>
 
-                <pre className={`text-xs font-mono leading-relaxed whitespace-pre-wrap break-words rounded-lg p-3 border ${meta.color}`}>
+                <pre className={`text-xs font-mono leading-relaxed whitespace-pre-wrap break-words rounded-lg p-3 border ${meta.color} ${step.isSimulated ? '!text-white' : '!text-blue-400'}`}>
                   {step.type === 'tool_call' && step.toolInput
                     ? JSON.stringify(step.toolInput, null, 2)
                     : step.content}

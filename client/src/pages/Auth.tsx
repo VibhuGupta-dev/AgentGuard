@@ -19,7 +19,7 @@ export default function Auth() {
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [navigate]);
 
@@ -34,7 +34,7 @@ export default function Auth() {
       } else {
         await authApi.register(email, password, name);
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Authentication failed');
     } finally {
@@ -49,7 +49,7 @@ export default function Auth() {
 
     try {
       await authApi.googleLogin(profile);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Google login failed');
     } finally {

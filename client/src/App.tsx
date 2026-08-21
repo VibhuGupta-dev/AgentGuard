@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Auth from './pages/Auth';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import PromptInput from './pages/PromptInput';
 import ScenarioSelection from './pages/ScenarioSelection';
@@ -20,7 +21,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
+        {/* Public Landing Page */}
+        <Route path="/" element={<Landing />} />
+        
+        {/* Public Auth */}
         <Route path="/auth" element={<Auth />} />
 
         {/* Protected — wrapped in Layout (sidebar + tabs) */}
@@ -30,7 +34,7 @@ function App() {
             <RequireAuth>
               <Layout>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/thread/new" element={<PromptInput />} />
                   <Route path="/thread/:id/setup" element={<PromptInput />} />
                   <Route path="/thread/:id/run/:runId/scenarios" element={<ScenarioSelection />} />
@@ -38,7 +42,7 @@ function App() {
                   <Route path="/thread/:id/run/:runId/trace/:scenarioId" element={<TraceDetail />} />
                   <Route path="/thread/:id/run/:runId/scorecard" element={<Scorecard />} />
                   <Route path="/thread/:id/compare" element={<Compare />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </Layout>
             </RequireAuth>

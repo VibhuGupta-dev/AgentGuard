@@ -7,26 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#0a0b0d", // Dark background
-        foreground: "#f3f4f6",
+        background: "#000000", // Pure black background
+        foreground: "#f5f5f5",
         card: {
-          DEFAULT: "#12141c",
-          border: "#202430",
+          DEFAULT: "#0a0a0a",
+          border: "#1a1a1a",
         },
         primary: {
-          DEFAULT: "#4f46e5", // Indigo
-          hover: "#4338ca",
+          DEFAULT: "#ff5a00", // Orange
+          hover: "#e04f00",
         },
         status: {
           pass: "#10b981",
           fail: "#ef4444",
           partial: "#f59e0b",
           queued: "#3b82f6",
-          running: "#8b5cf6",
+          running: "#ff5a00",
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
     },
