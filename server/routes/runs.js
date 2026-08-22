@@ -236,7 +236,7 @@ router.post('/:id/optimize-prompt', authMiddleware, async (req, res) => {
     if (process.env.GEMINI_API_KEY && !process.env.GEMINI_API_KEY.startsWith('your_')) {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: promptText
       });
       optimizedPrompt = response.text || "";
