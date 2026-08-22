@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Sparkles, 
-  Layers, 
+  
   AlertTriangle, 
   Settings2, 
-  ShieldAlert, 
+  
   ArrowRight,
   Plus,
   Trash2,

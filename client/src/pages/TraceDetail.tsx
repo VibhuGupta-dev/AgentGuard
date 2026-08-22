@@ -22,7 +22,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 export default function TraceDetail() {
-  const { id, runId, scenarioId } = useParams();
+  const { scenarioId } = useParams();
   const navigate = useNavigate();
 
   const [trace, setTrace] = useState<any>(null);

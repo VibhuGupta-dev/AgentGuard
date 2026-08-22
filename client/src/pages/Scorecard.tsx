@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
-  CheckCircle2, XCircle, BarChart3, AlertTriangle, ChevronRight, GitCompare, Download, Zap
+  CheckCircle2, XCircle, ChevronRight, GitCompare, Download, Zap
 } from 'lucide-react';
 import {
-  RadialBarChart, RadialBar, ResponsiveContainer,
+  ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
   PieChart, Pie, Legend
 } from 'recharts';
@@ -66,7 +66,7 @@ export default function Scorecard() {
     Promise.all([
       runsApi.getRunDetails(runId),
       runsApi.getRunStatus(runId)
-    ]).then(([details, status]) => {
+    ]).then(([, status]) => {
       setRun(status.run);
       setScenarios(status.scenarios || []);
       setTraces(status.traces || []);
