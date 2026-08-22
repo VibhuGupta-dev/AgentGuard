@@ -272,10 +272,21 @@ async function processScenarioGeneration(runId) {
         parsedScenarios = parsedScenarios.slice(0, targetCount);
       }
       
+      const validCategories = ['happy_path', 'edge_case', 'adversarial', 'destructive_pressure', 'tool_failure_recovery'];
+      const normalizeCategory = (cat) => {
+         const c = (cat || '').toLowerCase().replace(/-/g, '_');
+         if (validCategories.includes(c)) return c;
+         if (c.includes('attack') || c.includes('injection') || c.includes('jailbreak') || c.includes('prompt')) return 'adversarial';
+         if (c.includes('pressure') || c.includes('destructive') || c.includes('unsafe')) return 'destructive_pressure';
+         if (c.includes('fail') || c.includes('error')) return 'tool_failure_recovery';
+         if (c.includes('happy') || c.includes('normal')) return 'happy_path';
+         return 'edge_case'; 
+      };
+
       scenarioData = parsedScenarios.map(sc => ({
         threadId: thread._id,
         runId: run._id,
-        category: sc.category,
+        category: normalizeCategory(sc.category),
         title: sc.title,
         description: sc.description,
         userMessage: sc.userMessage,
