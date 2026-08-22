@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import {
   CheckCircle2, XCircle, Clock, Loader2, MessageSquare,
@@ -24,14 +24,14 @@ const STEP_LABELS: Record<string, string> = {
   agent_final_response: 'Final Response',
 };
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const SOCKET_URL = (import.meta as any).env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export default function LiveExecution() {
   const navigate = useNavigate();
   const { id, runId } = useParams();
   const { addTab } = useTabStore();
 
-  const [runData, setRunData] = useState<any>(null);
+  // removed runData
   const [scenarios, setScenarios] = useState<any[]>([]);
   const [traces, setTraces] = useState<Record<string, any>>({});
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
@@ -61,14 +61,21 @@ export default function LiveExecution() {
     pollRef.current = setInterval(async () => {
       try {
         const res = await runsApi.getRunStatus(runId);
-        setRunData(res.run);
+        // removed setRunData(res.run)
         setScenarios(res.scenarios || []);
 
-        const traceMap: Record<string, any> = {};
-        (res.traces || []).forEach((t: any) => {
-          traceMap[t.scenarioId] = t;
+        setTraces(prev => {
+          const newTraces = { ...prev };
+          (res.traces || []).forEach((t: any) => {
+            const existingSteps = prev[t.scenarioId]?.steps || [];
+            const dbSteps = t.steps || [];
+            newTraces[t.scenarioId] = {
+              ...t,
+              steps: dbSteps.length > existingSteps.length ? dbSteps : existingSteps
+            };
+          });
+          return newTraces;
         });
-        setTraces(traceMap);
 
         if (res.run.status === 'completed' || res.run.status === 'failed') {
           clearInterval(pollRef.current!);
@@ -94,14 +101,14 @@ export default function LiveExecution() {
   };
 
   const getScenarioStatus = (sc: any) => {
-    const trace = traces[sc._id];
+    const trace = traces[sc?._id];
     if (!trace) return 'queued';
     if (trace.outcome) return trace.outcome === 'pass' ? 'pass' : 'fail';
     return 'running';
   };
 
   const activeTrace = activeScenarioId ? traces[activeScenarioId] : null;
-  const activeScenario = scenarios.find(s => s._id === activeScenarioId);
+  const activeScenario = scenarios.find(s => s?._id === activeScenarioId);
 
   return (
     <div className="space-y-5 h-full flex flex-col">
@@ -129,11 +136,11 @@ export default function LiveExecution() {
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Scenarios</h3>
           {scenarios.map((sc) => {
             const status = getScenarioStatus(sc);
-            const isActive = sc._id === activeScenarioId;
+            const isActive = sc?._id === activeScenarioId;
             return (
               <button
-                key={sc._id}
-                onClick={() => setActiveScenarioId(sc._id)}
+                key={sc?._id}
+                onClick={() => setActiveScenarioId(sc?._id)}
                 className={`w-full text-left p-3 rounded-lg border flex items-center justify-between text-xs transition
                   ${isActive ? 'border-primary/50 bg-primary/5' : 'border-card-border hover:border-slate-700 bg-slate-950/30'}`}
               >
@@ -142,14 +149,14 @@ export default function LiveExecution() {
                   {status === 'running' && <Loader2 className="h-3.5 w-3.5 text-violet-400 animate-spin shrink-0" />}
                   {status === 'pass' && <CheckCircle2 className="h-3.5 w-3.5 text-status-pass shrink-0" />}
                   {status === 'fail' && <XCircle className="h-3.5 w-3.5 text-status-fail shrink-0" />}
-                  <span className="font-semibold text-slate-200 truncate">{sc.title}</span>
+                  <span className="font-semibold text-slate-200 truncate">{sc?.title}</span>
                 </div>
                 <span className={`text-[9px] font-bold uppercase shrink-0 ml-1 px-1.5 py-0.5 rounded
-                  ${sc.category === 'happy_path' ? 'bg-emerald-950/40 text-emerald-400' :
-                    sc.category === 'edge_case' ? 'bg-slate-800 text-slate-400' :
-                    sc.category === 'adversarial' ? 'bg-red-950/40 text-red-400' :
+                  ${sc?.category === 'happy_path' ? 'bg-emerald-950/40 text-emerald-400' :
+                    sc?.category === 'edge_case' ? 'bg-slate-800 text-slate-400' :
+                    sc?.category === 'adversarial' ? 'bg-red-950/40 text-red-400' :
                     'bg-amber-950/40 text-amber-500'}`}>
-                  {(sc.category || '').replace(/_/g, ' ')}
+                  {(sc?.category || '').replace(/_/g, ' ')}
                 </span>
               </button>
             );
@@ -168,37 +175,39 @@ export default function LiveExecution() {
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {(activeTrace?.steps || []).map((step: any, idx: number) => (
+              {(activeTrace?.steps || []).map((step: any, idx: number) => {
+                if (!step) return null;
+                return (
                 <div key={idx} className="flex items-start space-x-3">
                   <div className="mt-0.5 bg-slate-900 border border-card-border p-1.5 rounded-lg shrink-0">
-                    {STEP_ICONS[step.type] || <Terminal className="h-3.5 w-3.5 text-slate-500" />}
+                    {STEP_ICONS[step?.type] || <Terminal className="h-3.5 w-3.5 text-slate-500" />}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                        Step {step.stepNumber} · {STEP_LABELS[step.type] || step.type}
+                        Step {step?.stepNumber} · {STEP_LABELS[step?.type] || step?.type}
                       </span>
-                      {step.toolName && (
+                      {step?.toolName && (
                         <span className="text-[9px] font-mono bg-amber-950/20 text-amber-400 px-1.5 rounded border border-amber-500/20">
-                          {step.toolName}
+                          {step?.toolName}
                         </span>
                       )}
                     </div>
                     <div className={`text-xs rounded-lg p-2.5 font-mono leading-relaxed border
-                      ${step.type === 'tool_result' ? 'bg-emerald-950/10 border-emerald-500/10 text-emerald-300' :
-                        step.type === 'tool_call' ? 'bg-amber-950/10 border-amber-500/10 text-amber-300' :
-                        step.type === 'agent_reasoning' ? 'bg-violet-950/10 border-violet-500/10 text-violet-300' :
-                        step.type === 'user_message' ? 'bg-blue-950/10 border-blue-500/10 text-blue-300' :
+                      ${step?.type === 'tool_result' ? 'bg-emerald-950/10 border-emerald-500/10 text-emerald-300' :
+                        step?.type === 'tool_call' ? 'bg-amber-950/10 border-amber-500/10 text-amber-300' :
+                        step?.type === 'agent_reasoning' ? 'bg-violet-950/10 border-violet-500/10 text-violet-300' :
+                        step?.type === 'user_message' ? 'bg-blue-950/10 border-blue-500/10 text-blue-300' :
                         'bg-slate-900/50 border-card-border text-slate-300'
-                      } ${step.isSimulated ? '!text-white' : '!text-blue-400'}`}
+                      } ${step?.isSimulated ? '!text-white' : '!text-blue-400'}`}
                     >
-                      {step.type === 'tool_call' && step.toolInput
-                        ? JSON.stringify(step.toolInput, null, 2)
-                        : (typeof step.content === 'object' ? JSON.stringify(step.content, null, 2) : String(step.content || ''))}
+                      {step?.type === 'tool_call' && step?.toolInput
+                        ? JSON.stringify(step?.toolInput, null, 2)
+                        : (typeof step?.content === 'object' ? JSON.stringify(step?.content, null, 2) : String(step?.content || ''))}
                     </div>
                   </div>
                 </div>
-              ))}
+              );})}
 
               {/* Running indicator */}
               {getScenarioStatus(activeScenario) === 'running' && (
@@ -211,20 +220,20 @@ export default function LiveExecution() {
               {/* Verdict badge */}
               {activeTrace?.outcome && (
                 <div className={`mx-10 p-3 rounded-xl border text-xs font-semibold flex items-center space-x-2
-                  ${activeTrace.outcome === 'pass'
+                  ${activeTrace?.outcome === 'pass'
                     ? 'bg-emerald-950/20 border-emerald-500/20 text-emerald-400'
                     : 'bg-red-950/20 border-red-500/20 text-red-400'}`}
                 >
-                  {activeTrace.outcome === 'pass'
+                  {activeTrace?.outcome === 'pass'
                     ? <CheckCircle2 className="h-4 w-4" />
                     : <AlertTriangle className="h-4 w-4" />}
                   <div>
-                    <span className="uppercase font-extrabold">{activeTrace.outcome}</span>
-                    {activeTrace.failureMode && activeTrace.failureMode !== 'none' && (
-                      <span className="ml-2 font-mono text-[10px] opacity-70">· {(activeTrace.failureMode || '').replace(/_/g, ' ')}</span>
+                    <span className="uppercase font-extrabold">{activeTrace?.outcome}</span>
+                    {activeTrace?.failureMode && activeTrace?.failureMode !== 'none' && (
+                      <span className="ml-2 font-mono text-[10px] opacity-70">· {(activeTrace?.failureMode || '').replace(/_/g, ' ')}</span>
                     )}
-                    {activeTrace.failureEvidence && (
-                      <p className="font-normal text-[10px] mt-1 opacity-80">{activeTrace.failureEvidence}</p>
+                    {activeTrace?.failureEvidence && (
+                      <p className="font-normal text-[10px] mt-1 opacity-80">{activeTrace?.failureEvidence}</p>
                     )}
                   </div>
                 </div>
