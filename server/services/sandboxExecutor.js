@@ -177,7 +177,7 @@ async function runRealGeminiSandbox(scenario, thread, trace) {
   let chatSession;
   try {
     chatSession = ai.chats.create({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       config: {
         systemInstruction: thread.latestSystemPrompt,
         tools: toolsDeclaration,
@@ -293,7 +293,7 @@ async function runRealGeminiSandbox(scenario, thread, trace) {
 
         const mockResponse = await withAggressiveRetry(
           () => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: mockPrompt,
             config: { responseMimeType: "application/json" }
           }),
@@ -385,7 +385,7 @@ async function runRealGeminiSandbox(scenario, thread, trace) {
     try {
       const judgeResponse = await withAggressiveRetry(
         () => ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             contents: judgePrompt,
             config: { responseMimeType: "application/json" }
           }),
