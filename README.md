@@ -27,6 +27,12 @@ Pit two completely different System Prompts (e.g., "The Reckless Coder" vs. "The
 ### 🧠 Dynamic Scenario Generation
 AgentGuard intelligently analyzes your Agent's intended domain (e.g., Customer Support, DevOps, Finance) and utilizes Google Gemini to dynamically generate customized edge-cases, adversarial attacks, and happy-path scenarios tailored specifically to your tools.
 
+### 🤖 Auto-Prompt Optimizer (Self-Healing AI)
+AgentGuard goes beyond just identifying vulnerabilities. If your agent fails an adversarial attack or executes a destructive action, the platform's **Auto-Prompt Optimizer** acts as an AI Security Researcher. It analyzes the failure traces and dynamically generates a heavily guarded, optimized system prompt to instantly patch the vulnerabilities. 
+
+### 📊 Enterprise Analytics Dashboard
+Post-execution, results are visualized through a highly polished React (Recharts) dashboard. It provides detailed Bar Charts mapping out pass/fail rates across different vulnerability categories (Happy Path, Edge Case, Adversarial) and animated Pie Charts breaking down the Failure Taxonomy.
+
 ### ⚡ Live Sandbox Execution (WebSockets)
 Watch your agents think and act in real-time. Using **Socket.IO**, AgentGuard streams every `user_message`, `agent_reasoning`, `tool_call`, and `tool_result` directly to a beautiful, developer-friendly terminal UI. 
 
