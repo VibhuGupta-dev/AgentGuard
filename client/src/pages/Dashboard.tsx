@@ -9,7 +9,8 @@ import {
   Activity,
   CheckCircle2,
   ChevronRight,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { threadsApi, runsApi } from '../lib/api';
@@ -250,6 +251,14 @@ export default function Dashboard() {
               <div className="grid gap-4">
                 {allRuns.slice(0, 5).map((r) => {
                   const thread = threads.find((t) => t._id === r.threadId);
+                  const handleDelete = async (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    if (!confirm('Delete this run?')) return;
+                    try {
+                      await runsApi.deleteRun(r._id);
+                      setAllRuns(prev => prev.filter(run => run._id !== r._id));
+                    } catch (err) { alert('Failed to delete run'); }
+                  };
                   return (
                     <button 
                       key={r._id} 
@@ -259,12 +268,16 @@ export default function Dashboard() {
                       <div className="flex items-center gap-4">
                         <div className={`h-2 w-2 rounded-full ${
                           r.status === 'completed' ? 'bg-emerald-500' :
-                          r.status === 'running' ? 'bg-primary animate-pulse' : 'bg-red-500'
+                          r.status === 'failed' ? 'bg-red-500' :
+                          'bg-primary animate-pulse'
                         }`} />
                         <div>
-                          <h4 className="text-white font-medium text-sm sm:text-base group-hover:text-primary transition-colors">
-                            {thread?.agentName || 'Unknown Agent'}
-                          </h4>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-medium text-white text-sm sm:text-base group-hover:text-primary transition-colors">
+                              {thread?.agentName || 'Unknown Agent'}
+                            </h4>
+                            {r.isAttackMode && <span className="text-red-500 text-sm">🔥</span>}
+                          </div>
                           <div className="flex items-center text-xs text-neutral-500 mt-1 gap-3">
                             <span className="font-mono bg-neutral-900 px-2 py-0.5 rounded text-neutral-400">{r.versionLabel}</span>
                             <span>{new Date(r.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
@@ -273,13 +286,27 @@ export default function Dashboard() {
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6 sm:gap-8">
+                        {r.tokensUsed > 0 && (
+                          <div className="flex flex-col items-end hidden sm:flex">
+                            <span className="text-xs text-neutral-500 mb-0.5">Cost</span>
+                            <span className="font-mono text-xs text-neutral-400">${(r.estimatedCost || 0).toFixed(4)}</span>
+                          </div>
+                        )}
                         <div className="flex flex-col items-start sm:items-end">
                           <span className="text-xs text-neutral-500 mb-0.5">Score</span>
                           <span className={`font-mono font-medium ${r.status === 'completed' ? 'text-white' : 'text-neutral-600'}`}>
                             {r.status === 'completed' ? `${r.overallScore}%` : '--'}
                           </span>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-neutral-700 group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
+                        <div className="flex items-center space-x-2">
+                          <ChevronRight className="h-5 w-5 text-neutral-700 group-hover:text-primary transition-colors transform group-hover:translate-x-1" />
+                          <div 
+                            className="p-1.5 hover:bg-red-500/10 rounded-lg text-neutral-600 hover:text-red-500 transition-colors"
+                            onClick={handleDelete}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </div>
+                        </div>
                       </div>
                     </button>
                   );

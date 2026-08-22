@@ -173,7 +173,7 @@ router.post('/:id/analyze', authMiddleware, async (req, res) => {
       riskLevel: getRiskLevel(t.name, t.description)
     }));
 
-    res.json({ agentName, taskDomain, tools });
+    res.json({ agentName, taskDomain, tools, customRules: thread.customRules || [], systemPrompt: thread.latestSystemPrompt });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -182,7 +182,7 @@ router.post('/:id/analyze', authMiddleware, async (req, res) => {
 // 4. Confirm Setup & Spawn Run in generating status
 router.post('/:id/confirm', authMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { agentName, taskDomain, tools, versionLabel } = req.body;
+  const { agentName, taskDomain, tools, versionLabel, customRules, systemPrompt, isAttackMode } = req.body;
 
   try {
     const thread = await Thread.findOne({ _id: id, userId: req.user.userId });
@@ -190,16 +190,21 @@ router.post('/:id/confirm', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Thread not found' });
     }
 
+    if (systemPrompt) {
+      thread.latestSystemPrompt = systemPrompt;
+      thread.systemPromptHash = require('crypto').createHash('sha256').update(systemPrompt.trim()).digest('hex');
+    }
     thread.agentName = agentName;
     thread.taskDomain = taskDomain;
     thread.tools = tools;
+    if (customRules) thread.customRules = customRules;
     await thread.save();
 
     // Auto calculate version increment if default
     let finalLabel = versionLabel;
     if (!finalLabel) {
       const runCount = await Run.countDocuments({ threadId: thread._id });
-      finalLabel = `Run ${runCount + 1}`;
+      finalLabel = isAttackMode ? `Attack Run ${runCount + 1}` : `Run ${runCount + 1}`;
     }
 
     // Create run
@@ -207,11 +212,26 @@ router.post('/:id/confirm', authMiddleware, async (req, res) => {
       threadId: thread._id,
       versionLabel: finalLabel,
       status: 'pending',
-      overallScore: 100
+      overallScore: 100,
+      isAttackMode: isAttackMode || false
     });
     await run.save();
 
     res.status(201).json({ thread, run });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Delete Thread
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const thread = await Thread.findOneAndDelete({ _id: req.params.id, userId: req.user.userId });
+    if (!thread) return res.status(404).json({ error: 'Thread not found' });
+    
+    // Cleanup related runs and scenarios (optional, depending on strictness)
+    // For simplicity, we just delete the thread. In a real app, we'd cascade delete.
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

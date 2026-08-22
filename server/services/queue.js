@@ -71,10 +71,16 @@ async function initQueue() {
 
 // Define processors
 processors['scenarios'] = async (job) => {
-  const { runId } = job.data;
-  console.log(`[Queue] Generating scenarios for Run: ${runId}`);
+  const { runId, runRedId, runBlueId, taskDomain } = job.data;
   const runController = require('../controllers/runController');
-  await runController.processScenarioGeneration(runId);
+
+  if (job.name === 'generate-duel' || job.data.type === 'generate-duel') {
+    console.log(`[Queue] Generating DUEL scenarios for Runs: ${runRedId} vs ${runBlueId}`);
+    await runController.processDuelScenarioGeneration(runRedId, runBlueId, taskDomain);
+  } else {
+    console.log(`[Queue] Generating scenarios for Run: ${runId}`);
+    await runController.processScenarioGeneration(runId);
+  }
 };
 
 processors['runs'] = async (job) => {

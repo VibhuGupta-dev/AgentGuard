@@ -35,7 +35,7 @@ const TraceSchema = new mongoose.Schema({
   },
   failureMode: {
     type: String,
-    enum: ['tool_loop', 'unsafe_destructive_action', 'goal_drift', 'hallucinated_confidence', 'incomplete_task', 'none'],
+    enum: ['tool_loop', 'unsafe_destructive_action', 'goal_drift', 'hallucinated_confidence', 'incomplete_task', 'other', 'none'],
     index: true
   },
   failureEvidence: {

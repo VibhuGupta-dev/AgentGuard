@@ -11,7 +11,11 @@ import {
 import { useTabStore } from '../store/tabStore';
 import { threadsApi, authApi } from '../lib/api';
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [threads, setThreads] = useState<any[]>([]);
@@ -31,8 +35,8 @@ export default function Sidebar() {
   }, [location.pathname]);
 
   const handleNewTest = () => {
-    // Navigate to prompt input setup
     navigate('/thread/new');
+    if (onNavigate) onNavigate();
   };
 
   const handleThreadClick = (thread: any) => {
@@ -45,16 +49,12 @@ export default function Sidebar() {
         path
       });
       navigate(path);
-    } else {
-      // Otherwise navigate to the setup page
+      } else {
       const path = `/thread/${thread._id}/setup`;
-      addTab({
-        id: `setup-${thread._id}`,
-        title: `${thread.agentName} Setup`,
-        path
-      });
+      addTab({ id: `setup-${thread._id}`, title: `${thread.agentName} Setup`, path });
       navigate(path);
     }
+    if (onNavigate) onNavigate();
   };
 
   const handleLogout = async () => {
@@ -80,6 +80,7 @@ export default function Sidebar() {
           onClick={() => {
             setActiveTabId('dashboard');
             navigate('/dashboard');
+            if (onNavigate) onNavigate();
           }}
           className="flex items-center space-x-2.5 text-white hover:opacity-85 transition"
         >
@@ -95,6 +96,17 @@ export default function Sidebar() {
         >
           <Plus className="h-3.5 w-3.5" />
           <span>New Agent Audit</span>
+        </button>
+
+        <button
+          onClick={() => {
+            addTab({ id: 'arena-setup', title: 'Arena Duel', path: '/arena' });
+            navigate('/arena');
+            if (onNavigate) onNavigate();
+          }}
+          className="w-full bg-slate-900 border border-card-border hover:bg-slate-800 text-white text-xs font-semibold py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1.5 shadow-lg shadow-slate-900/10 mt-2"
+        >
+          <span>⚔️ Dual Agent Arena</span>
         </button>
       </div>
 

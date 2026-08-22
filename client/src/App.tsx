@@ -11,6 +11,9 @@ import TraceDetail from './pages/TraceDetail';
 import Scorecard from './pages/Scorecard';
 import Compare from './pages/Compare';
 
+import ArenaSetup from './pages/ArenaSetup';
+import ArenaBattle from './pages/ArenaBattle';
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const user = localStorage.getItem('user');
   if (!user) return <Navigate to="/auth" replace />;
@@ -42,6 +45,11 @@ function App() {
                   <Route path="/thread/:id/run/:runId/trace/:scenarioId" element={<TraceDetail />} />
                   <Route path="/thread/:id/run/:runId/scorecard" element={<Scorecard />} />
                   <Route path="/thread/:id/compare" element={<Compare />} />
+                  
+                  {/* Arena Routes */}
+                  <Route path="/arena" element={<ArenaSetup />} />
+                  <Route path="/arena/battle/:redId/:blueId" element={<ArenaBattle />} />
+                  
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
                 </Routes>
               </Layout>

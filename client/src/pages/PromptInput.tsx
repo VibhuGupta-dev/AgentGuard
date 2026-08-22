@@ -29,6 +29,8 @@ export default function PromptInput() {
   const [agentName, setAgentName] = useState('');
   const [taskDomain, setTaskDomain] = useState<'customer-support' | 'coding' | 'finance' | 'general'>('general');
   const [tools, setTools] = useState<any[]>([]);
+  const [customRules, setCustomRules] = useState<string[]>([]);
+  const [newRule, setNewRule] = useState('');
   const [versionLabel, setVersionLabel] = useState('v1');
   const [saving, setSaving] = useState(false);
 
@@ -47,6 +49,8 @@ export default function PromptInput() {
           setAgentName(res.agentName);
           setTaskDomain(res.taskDomain);
           setTools(res.tools || []);
+          setCustomRules(res.customRules || []);
+          if (res.systemPrompt) setSystemPrompt(res.systemPrompt);
           setShowConfigForm(true);
         })
         .catch(console.error)
@@ -78,17 +82,18 @@ export default function PromptInput() {
     }
   };
 
-  const handleConfirm = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmSetup = async (isAttackMode = false) => {
     if (!threadId) return;
-
     setSaving(true);
     try {
       const config = {
         agentName,
         taskDomain,
         tools,
-        versionLabel
+        versionLabel,
+        customRules,
+        systemPrompt,
+        isAttackMode
       };
 
       const res = await threadsApi.confirmSetup(threadId, config);
@@ -190,7 +195,7 @@ export default function PromptInput() {
               <h3 className="text-sm font-bold text-white">Extracted Metadata</h3>
             </div>
 
-            <form onSubmit={handleConfirm} className="space-y-4 text-xs">
+            <form onSubmit={(e) => { e.preventDefault(); handleConfirmSetup(false); }} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Suggested Agent Name</label>
@@ -219,6 +224,17 @@ export default function PromptInput() {
               </div>
 
               <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">System Prompt</label>
+                <textarea
+                  required
+                  rows={6}
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  className="w-full bg-slate-900 border border-card-border focus:border-primary/50 text-white rounded-lg px-3 py-2 text-xs outline-none transition font-mono leading-relaxed"
+                />
+              </div>
+
+              <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Run Version Tag</label>
                 <input
                   type="text"
@@ -230,7 +246,37 @@ export default function PromptInput() {
                 />
               </div>
 
-              <div className="pt-2">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase block mb-2">Custom Safety Rules</label>
+                <div className="space-y-2 mb-2">
+                  {customRules.map((r, i) => (
+                    <div key={i} className="flex items-center space-x-2 bg-slate-950 border border-card-border rounded px-2 py-1">
+                      <span className="flex-1 text-xs font-mono opacity-80">{r}</span>
+                      <button type="button" onClick={() => setCustomRules(prev => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-300">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newRule}
+                    onChange={(e) => setNewRule(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newRule.trim()) { setCustomRules([...customRules, newRule.trim()]); setNewRule(''); }
+                      }
+                    }}
+                    placeholder="e.g. Agent must never mention competitors"
+                    className="flex-1 bg-slate-900 border border-card-border focus:border-primary/50 text-white rounded-lg px-3 py-1.5 text-xs outline-none transition font-mono"
+                  />
+                  <button type="button" onClick={() => { if (newRule.trim()) { setCustomRules([...customRules, newRule.trim()]); setNewRule(''); } }} className="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-slate-700">Add</button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center space-x-3">
                 <button
                   type="submit"
                   disabled={saving}
@@ -238,6 +284,21 @@ export default function PromptInput() {
                 >
                   <span>{saving ? 'Confirming...' : 'Confirm & Generate Scenarios'}</span>
                   <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!versionLabel.trim()) {
+                      alert('Please specify a Run Version Tag before attacking.');
+                      return;
+                    }
+                    handleConfirmSetup(true);
+                  }}
+                  className="bg-red-950/30 text-red-500 border border-red-500/30 hover:bg-red-900/40 text-xs font-semibold px-4 py-2.5 rounded-lg transition flex items-center space-x-1.5 disabled:opacity-50"
+                >
+                  <span>🔥 Attack My Agent</span>
                 </button>
               </div>
 

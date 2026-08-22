@@ -15,7 +15,7 @@ const ScenarioSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['happy_path', 'edge_case', 'adversarial', 'destructive_pressure'],
+    enum: ['happy_path', 'edge_case', 'adversarial', 'destructive_pressure', 'tool_failure_recovery'],
     required: true,
     index: true
   },

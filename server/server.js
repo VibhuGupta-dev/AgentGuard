@@ -44,6 +44,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/threads', threadRoutes);
 app.use('/api/runs', runRoutes);
+app.use('/api/arena', require('./routes/arena'));
 
 // Health Check
 app.get('/health', (req, res) => {

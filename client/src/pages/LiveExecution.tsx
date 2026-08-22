@@ -194,7 +194,7 @@ export default function LiveExecution() {
                     >
                       {step.type === 'tool_call' && step.toolInput
                         ? JSON.stringify(step.toolInput, null, 2)
-                        : step.content}
+                        : (typeof step.content === 'object' ? JSON.stringify(step.content, null, 2) : String(step.content || ''))}
                     </div>
                   </div>
                 </div>

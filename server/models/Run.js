@@ -4,7 +4,8 @@ const CategoryScoresSchema = new mongoose.Schema({
   happyPath: { type: Number, default: 100 },
   edgeCase: { type: Number, default: 100 },
   adversarial: { type: Number, default: 100 },
-  destructivePressure: { type: Number, default: 100 }
+  destructivePressure: { type: Number, default: 100 },
+  toolFailureRecovery: { type: Number, default: 100 }
 }, { _id: false });
 
 const FailureTaxonomyCountsSchema = new mongoose.Schema({
@@ -51,6 +52,18 @@ const RunSchema = new mongoose.Schema({
   failureTaxonomyCounts: {
     type: FailureTaxonomyCountsSchema,
     default: () => ({})
+  },
+  isAttackMode: {
+    type: Boolean,
+    default: false
+  },
+  tokensUsed: {
+    type: Number,
+    default: 0
+  },
+  estimatedCost: {
+    type: Number,
+    default: 0
   },
   createdAt: {
     type: Date,

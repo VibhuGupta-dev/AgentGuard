@@ -34,6 +34,7 @@ const ThreadSchema = new mongoose.Schema({
     default: 'general',
     index: true
   },
+  customRules: [{ type: String }],
   tools: [ToolSchema]
 }, { timestamps: true });
 

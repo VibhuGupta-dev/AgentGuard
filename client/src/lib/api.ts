@@ -91,12 +91,27 @@ export const runsApi = {
     const res = await api.get(`/runs/${id}/status`);
     return res.data;
   },
+  optimizePrompt: async (id) => {
+    const res = await api.post(`/runs/${id}/optimize-prompt`);
+    return res.data;
+  },
   getTrace: async (scenarioId) => {
     const res = await api.get(`/runs/traces/${scenarioId}`);
     return res.data;
   },
   compareRuns: async (a, b) => {
     const res = await api.get(`/runs/compare/runs?a=${a}&b=${b}`);
+    return res.data;
+  },
+  deleteRun: async (id) => {
+    const res = await api.delete(`/runs/${id}`);
+    return res.data;
+  }
+};
+
+export const arenaApi = {
+  startDuel: async (data: { promptRed: string; promptBlue: string; taskDomain: string; customRules: string[] }) => {
+    const res = await api.post('/arena/duel', data);
     return res.data;
   }
 };

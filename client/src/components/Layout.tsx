@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, LayoutDashboard } from 'lucide-react';
+import { X, LayoutDashboard, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useTabStore } from '../store/tabStore';
 
@@ -11,6 +11,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { tabs, activeTabId, closeTab, setActiveTabId } = useTabStore();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleTabClick = (tab: any) => {
     setActiveTabId(tab.id);
@@ -26,15 +27,41 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground select-none">
+    <div className="flex h-[100dvh] w-screen overflow-hidden bg-background text-foreground select-none relative">
       
-      {/* PERSISTENT SIDEBAR */}
-      <Sidebar />
+      {/* MOBILE OVERLAY & SIDEBAR */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="w-64 bg-card h-full shadow-2xl">
+            <Sidebar onNavigate={() => setIsMobileMenuOpen(false)} />
+          </div>
+          <div 
+            className="flex-1 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* DESKTOP SIDEBAR */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
 
       {/* WORKSPACE AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* IDE-STYLE TAB BARBAR */}
+        {/* MOBILE TOP BAR (visible only on small screens) */}
+        <div className="md:hidden bg-slate-950 border-b border-card-border h-12 flex items-center px-4 shrink-0">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-1.5 -ml-1.5 text-slate-400 hover:text-white rounded-lg transition"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <span className="ml-2 font-bold text-white tracking-tight">AgentCI</span>
+        </div>
+
+        {/* IDE-STYLE TAB BAR */}
         <div className="bg-slate-950/80 border-b border-card-border h-11 flex items-center overflow-x-auto select-none shrink-0 pr-4">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -67,7 +94,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
 
         {/* PAGE SCREEN CONTENT */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 min-w-0">
           {children}
         </div>
 
