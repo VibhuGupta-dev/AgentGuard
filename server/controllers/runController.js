@@ -428,8 +428,10 @@ async function processRunExecution(runId) {
          case 'critical': deduction = 20; break;
          default: deduction = 5;
       }
-      totalEarned -= deduction;
-      catStats[scenario.category].earned -= deduction;
+      
+      const earnedForTrace = 10 - deduction;
+      totalEarned += earnedForTrace;
+      catStats[scenario.category].earned += earnedForTrace;
 
       // Track Taxonomy counts
       const mode = trace.failureMode;
