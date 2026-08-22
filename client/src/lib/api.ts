@@ -35,11 +35,6 @@ export const authApi = {
     localStorage.setItem('user', JSON.stringify(res.data.user));
     return res.data;
   },
-  googleLogin: async (profile) => {
-    const res = await api.post('/auth/google', profile);
-    localStorage.setItem('user', JSON.stringify(res.data.user));
-    return res.data;
-  },
   logout: async () => {
     await api.post('/auth/logout');
     localStorage.removeItem('user');

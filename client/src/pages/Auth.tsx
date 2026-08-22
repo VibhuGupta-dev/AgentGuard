@@ -11,7 +11,6 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -28,24 +27,6 @@ export default function Auth() {
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSelect = async (profile: {
-    email: string;
-    name: string;
-    googleId: string;
-  }) => {
-    setShowGoogleModal(false);
-    setLoading(true);
-    setError(null);
-    try {
-      await authApi.googleLogin(profile);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Google login failed');
     } finally {
       setLoading(false);
     }
@@ -181,41 +162,6 @@ export default function Auth() {
                 : 'Start evaluating agents in minutes'}
             </p>
 
-            <button
-              type="button"
-              onClick={() => setShowGoogleModal(true)}
-              className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] py-2.5 text-sm font-medium text-zinc-200 hover:bg-white/[0.06] hover:border-white/15 transition"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  fill="#EA4335"
-                  d="M12 5.1c1.76 0 3.33.66 4.57 1.74l3.4-3.4C18.05 1.85 15.24.7 12 .7 7.36.7 3.35 3.36 1.57 7.28l3.96 3.07C6.45 7.25 9 5.1 12 5.1z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M23.3 12.27c0-.82-.07-1.42-.22-2.04H12v3.7h6.48c-.13.98-.84 2.45-2.42 3.44l3.72 2.89c2.23-2.06 3.52-5.1 3.52-8z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.53 14.35A7.05 7.05 0 015.1 12c0-.82.15-1.61.41-2.35L1.57 6.58A11.27 11.27 0 00.7 12c0 1.82.44 3.54 1.22 5.07l3.61-2.72z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23.3c3.04 0 5.6-1 7.47-2.73l-3.72-2.89c-.99.66-2.32 1.12-3.75 1.12-2.99 0-5.53-2.13-6.44-5.02l-3.96 3.07C3.33 20.64 7.34 23.3 12 23.3z"
-                />
-              </svg>
-              Continue with Google
-            </button>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/[0.06]" />
-              </div>
-              <div className="relative flex justify-center text-[11px] uppercase tracking-wide">
-                <span className="bg-[#141416] px-3 text-zinc-600">or sign in with Email</span>
-              </div>
-            </div>
-
             {error && (
               <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-400">
                 <AlertCircle className="h-4 w-4 shrink-0" />
@@ -311,52 +257,6 @@ export default function Auth() {
         </div>
       </div>
 
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-[#141416] p-6 shadow-xl space-y-4 border border-white/10">
-            <h3 className="text-sm font-bold text-white">Google OAuth Sandbox</h3>
-            <p className="text-xs text-zinc-500">Select a test profile:</p>
-
-            <button
-              type="button"
-              onClick={() =>
-                handleGoogleSelect({
-                  email: 'dev@agentci.com',
-                  name: 'Google Dev',
-                  googleId: 'g_12345',
-                })
-              }
-              className="w-full text-left rounded-xl border border-white/10 p-3 hover:border-orange-500/40 transition text-xs bg-[#0c0c0e]"
-            >
-              <span className="font-semibold text-zinc-200">Google Dev</span>
-              <span className="block text-zinc-500">dev@agentci.com</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                handleGoogleSelect({
-                  email: 'qa-lead@gmail.com',
-                  name: 'QA Analyst',
-                  googleId: 'g_67890',
-                })
-              }
-              className="w-full text-left rounded-xl border border-white/10 p-3 hover:border-orange-500/40 transition text-xs bg-[#0c0c0e]"
-            >
-              <span className="font-semibold text-zinc-200">QA Analyst</span>
-              <span className="block text-zinc-500">qa-lead@gmail.com</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowGoogleModal(false)}
-              className="w-full text-xs text-zinc-500 py-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

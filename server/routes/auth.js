@@ -76,33 +76,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Mock Google Auth Login
-router.post('/google', async (req, res) => {
-  const { email, name, googleId } = req.body;
-  if (!email) {
-    return res.status(400).json({ error: 'Google email is required' });
-  }
-
-  try {
-    // Check if user exists, otherwise create a passwordless account
-    let user = await User.findOne({ email });
-    if (!user) {
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(`google-auth-${googleId || Date.now()}`, salt);
-      user = new User({ email, passwordHash, name: name || 'Google Developer' });
-      await user.save();
-    }
-
-    setTokenCookie(res, user._id, user.email);
-
-    res.json({
-      user: { id: user._id, email: user.email, name: user.name }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Logout
 router.post('/logout', (req, res) => {
   res.clearCookie('access_token');
