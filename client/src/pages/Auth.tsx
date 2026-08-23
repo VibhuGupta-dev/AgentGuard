@@ -20,6 +20,13 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address (e.g. user@gmail.com)');
+      return;
+    }
+
     setLoading(true);
     try {
       if (isLogin) await authApi.login(email, password);
